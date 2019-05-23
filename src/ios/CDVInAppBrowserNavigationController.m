@@ -35,10 +35,11 @@
     statusBarFrame.size.height = STATUSBAR_HEIGHT;
     // simplified from: http://stackoverflow.com/a/25669695/219684
 
-    UIToolbar* bgToolbar = [[UIToolbar alloc] initWithFrame:statusBarFrame];
-    bgToolbar.barStyle = UIBarStyleDefault;
-    [bgToolbar setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
-    [self.view addSubview:bgToolbar];
+    // RICHARD disabled statusbar background
+    // UIToolbar* bgToolbar = [[UIToolbar alloc] initWithFrame:statusBarFrame];
+    // bgToolbar.barStyle = UIBarStyleDefault;
+    // [bgToolbar setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
+    // [self.view addSubview:bgToolbar];
 
     [super viewDidLoad];
 }
