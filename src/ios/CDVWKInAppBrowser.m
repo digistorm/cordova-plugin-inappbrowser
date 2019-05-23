@@ -36,7 +36,7 @@
 #define    IAB_BRIDGE_NAME @"cordova_iab"
 
 #define    TOOLBAR_HEIGHT 44.0
-#define    STATUSBAR_HEIGHT 20.0
+//#define    STATUSBAR_HEIGHT 20.0
 #define    LOCATIONBAR_HEIGHT 21.0
 #define    FOOTER_HEIGHT ((TOOLBAR_HEIGHT) + (LOCATIONBAR_HEIGHT))
 
@@ -130,6 +130,14 @@ static CDVWKInAppBrowser* instance = nil;
     
     [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+- (UIColor *)colorFromHexString:(NSString *)hexString {
+    unsigned rgbValue = 0;
+    NSScanner *scanner = [NSScanner scannerWithString:hexString];
+    [scanner setScanLocation:1]; // bypass '#' character
+    [scanner scanHexInt:&rgbValue];
+    return [UIColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0 green:((rgbValue & 0xFF00) >> 8)/255.0 blue:(rgbValue & 0xFF)/255.0 alpha:1.0];
 }
 
 - (void)openInInAppBrowser:(NSURL*)url withOptions:(NSString*)options
@@ -228,9 +236,12 @@ static CDVWKInAppBrowser* instance = nil;
     [self.inAppBrowserViewController showLocationBar:browserOptions.location];
     [self.inAppBrowserViewController showToolBar:browserOptions.toolbar :browserOptions.toolbarposition];
     if (browserOptions.closebuttoncaption != nil || browserOptions.closebuttoncolor != nil) {
-        int closeButtonIndex = browserOptions.lefttoright ? (browserOptions.hidenavigationbuttons ? 1 : 4) : 0;
-        [self.inAppBrowserViewController setCloseButtonTitle:browserOptions.closebuttoncaption :browserOptions.closebuttoncolor :closeButtonIndex];
+        int closeButtonIndex = (!browserOptions.lefttoright) ? (browserOptions.hidenavigationbuttons ? 1 : 4) : 0;
+//        [self.inAppBrowserViewController setCloseButtonTitle:browserOptions.closebuttoncaption :browserOptions.closebuttoncolor :closeButtonIndex];
     }
+    // RICHARD hack
+    [self.inAppBrowserViewController setCloseButtonTitle:@"╳" :browserOptions.closebuttoncolor :0];
+    
     // Set Presentation Style
     UIModalPresentationStyle presentationStyle = UIModalPresentationFullScreen; // default
     if (browserOptions.presentationstyle != nil) {
@@ -240,6 +251,10 @@ static CDVWKInAppBrowser* instance = nil;
             presentationStyle = UIModalPresentationFormSheet;
         }
     }
+    
+    // RICHARD SET BACKGOROUND COLOUR
+    self.inAppBrowserViewController.view.backgroundColor = [self colorFromHexString:browserOptions.toolbarcolor];
+    
     self.inAppBrowserViewController.modalPresentationStyle = presentationStyle;
     
     // Set Transition Style
@@ -811,18 +826,23 @@ BOOL isExiting = FALSE;
     UIBarButtonItem* flexibleSpaceButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
     
     UIBarButtonItem* fixedSpaceButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
-    fixedSpaceButton.width = 20;
+    fixedSpaceButton.width = 10;
     
+    // RICHARD THIS SETS THE TOOLBAR FRAME (Done/arrows) (AS EXPECTED)
+    CGRect statusBarFrame = [UIApplication sharedApplication].statusBarFrame;
+    CGFloat statusBarHeight = statusBarFrame.size.height;
     float toolbarY = toolbarIsAtBottom ? self.view.bounds.size.height - TOOLBAR_HEIGHT : 0.0;
     CGRect toolbarFrame = CGRectMake(0.0, toolbarY, self.view.bounds.size.width, TOOLBAR_HEIGHT);
+    toolbarFrame.size.height = 44;
+    toolbarFrame.origin.y = statusBarHeight;
     
     self.toolbar = [[UIToolbar alloc] initWithFrame:toolbarFrame];
     self.toolbar.alpha = 1.000;
     self.toolbar.autoresizesSubviews = YES;
     self.toolbar.autoresizingMask = toolbarIsAtBottom ? (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin) : UIViewAutoresizingFlexibleWidth;
-    self.toolbar.barStyle = UIBarStyleBlackOpaque;
+    self.toolbar.barStyle = UIStatusBarStyleLightContent;
     self.toolbar.clearsContextBeforeDrawing = NO;
-    self.toolbar.clipsToBounds = NO;
+    self.toolbar.clipsToBounds = YES;
     self.toolbar.contentMode = UIViewContentModeScaleToFill;
     self.toolbar.hidden = NO;
     self.toolbar.multipleTouchEnabled = NO;
@@ -867,33 +887,43 @@ BOOL isExiting = FALSE;
     self.addressLabel.textColor = [UIColor colorWithWhite:1.000 alpha:1.000];
     self.addressLabel.userInteractionEnabled = NO;
     
-    NSString* frontArrowString = NSLocalizedString(@"►", nil); // create arrow from Unicode char
+    NSString* frontArrowString = NSLocalizedString(@"→", nil); // create arrow from Unicode char
     self.forwardButton = [[UIBarButtonItem alloc] initWithTitle:frontArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
     self.forwardButton.enabled = YES;
     self.forwardButton.imageInsets = UIEdgeInsetsZero;
     if (_browserOptions.navigationbuttoncolor != nil) { // Set button color if user sets it in options
-      self.forwardButton.tintColor = [self colorFromHexString:_browserOptions.navigationbuttoncolor];
+        self.forwardButton.tintColor = [self colorFromHexString:_browserOptions.navigationbuttoncolor];
     }
-
-    NSString* backArrowString = NSLocalizedString(@"◄", nil); // create arrow from Unicode char
+    
+    NSString* backArrowString = NSLocalizedString(@"←", nil); // create arrow from Unicode char
     self.backButton = [[UIBarButtonItem alloc] initWithTitle:backArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
     self.backButton.enabled = YES;
     self.backButton.imageInsets = UIEdgeInsetsZero;
     if (_browserOptions.navigationbuttoncolor != nil) { // Set button color if user sets it in options
-      self.backButton.tintColor = [self colorFromHexString:_browserOptions.navigationbuttoncolor];
+        self.backButton.tintColor = [self colorFromHexString:_browserOptions.navigationbuttoncolor];
     }
-
+    
+    // RICHARD Added menu button
+    NSString* menuString = NSLocalizedString(@"⠇", nil); // create overflow menu button
+    self.menuButton = [[UIBarButtonItem alloc] initWithTitle:menuString style:UIBarButtonItemStylePlain target:self action:@selector(goMenu:)];
+    self.menuButton.enabled = YES;
+    self.menuButton.imageInsets = UIEdgeInsetsZero;
+    if (_browserOptions.navigationbuttoncolor != nil) { // Set button color if user sets it in options
+        self.menuButton.tintColor = [self colorFromHexString:_browserOptions.navigationbuttoncolor];
+    }
+    
+    // RICHARD Flipped behaviour of lefttoright
     // Filter out Navigation Buttons if user requests so
     if (_browserOptions.hidenavigationbuttons) {
-        if (_browserOptions.lefttoright) {
+        if (!_browserOptions.lefttoright) {
             [self.toolbar setItems:@[flexibleSpaceButton, self.closeButton]];
         } else {
             [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton]];
         }
-    } else if (_browserOptions.lefttoright) {
+    } else if (!_browserOptions.lefttoright) {
         [self.toolbar setItems:@[self.backButton, fixedSpaceButton, self.forwardButton, flexibleSpaceButton, self.closeButton]];
     } else {
-        [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
+        [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton, fixedSpaceButton, self.menuButton]];
     }
     
     self.view.backgroundColor = [UIColor grayColor];
@@ -925,6 +955,9 @@ BOOL isExiting = FALSE;
 
 - (void)showLocationBar:(BOOL)show
 {
+    // RICHARD Never show location bar on iOS
+    show = false;
+    
     CGRect locationbarFrame = self.addressLabel.frame;
     
     BOOL toolbarVisible = !self.toolbar.hidden;
@@ -965,7 +998,8 @@ BOOL isExiting = FALSE;
             
             // webView take up whole height less toolBar height
             CGRect webViewBounds = self.view.bounds;
-            webViewBounds.size.height -= TOOLBAR_HEIGHT;
+            // RICHARD Don't adjust webview height
+            // webViewBounds.size.height -= TOOLBAR_HEIGHT;
             [self setWebViewFrame:webViewBounds];
         } else {
             // no toolBar, expand webView to screen dimensions
@@ -1052,7 +1086,8 @@ BOOL isExiting = FALSE;
 
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
-    return UIStatusBarStyleDefault;
+    // RICHARD Use light text in statusbar
+    return UIStatusBarStyleLightContent;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -1093,6 +1128,58 @@ BOOL isExiting = FALSE;
     }
 }
 
+// RICHARD Added menu popup (only tested on iOS 12.2)
+- (void)goMenu:(id)sender
+{
+    if (IsAtLeastiOSVersion(@"8.0")) {
+        
+        NSString* menuTitle = NSLocalizedString(@"Options", nil);
+        NSString* menuMessage = NSLocalizedString(@"Please select an option", nil);
+        
+        // iOS > 8 implementation using UIAlertController, which is the new way
+        // to do this going forward.
+        UIAlertController *alertController = [UIAlertController
+                                              alertControllerWithTitle:nil
+                                              message:nil
+                                              preferredStyle:UIAlertControllerStyleActionSheet];
+        
+        NSString* externalTitle = NSLocalizedString(@"Open in Browser", nil);
+        
+        UIAlertAction *externalAction = [UIAlertAction
+                                       actionWithTitle:externalTitle
+                                       style:UIAlertActionStyleDefault
+                                         handler:^(UIAlertAction *action) {
+                                             [self goExternal];
+                                         }];
+        [alertController addAction:externalAction];
+        
+             NSString* cancelTitle = NSLocalizedString(@"Cancel", nil);
+        
+            UIAlertAction *cancelAction = [UIAlertAction
+                                           actionWithTitle:cancelTitle
+                                           style:UIAlertActionStyleCancel
+                                           handler:nil];
+            [alertController addAction:cancelAction];
+        
+        [self presentViewController:alertController animated:YES completion:nil];
+    }
+}
+
+
+- (void)openInSystem:(NSURL*)url
+{
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:CDVPluginHandleOpenURLNotification object:url]];
+    [[UIApplication sharedApplication] openURL:url];
+}
+
+- (void)goExternal
+{
+    [self openInSystem:self.currentURL];
+}
+
+
+
+
 - (void)goBack:(id)sender
 {
     [self.webView goBack];
@@ -1108,8 +1195,17 @@ BOOL isExiting = FALSE;
     if (IsAtLeastiOSVersion(@"7.0") && !viewRenderedAtLeastOnce) {
         viewRenderedAtLeastOnce = TRUE;
         CGRect viewBounds = [self.webView bounds];
-        viewBounds.origin.y = STATUSBAR_HEIGHT;
-        viewBounds.size.height = viewBounds.size.height - STATUSBAR_HEIGHT;
+//        viewBounds.origin.y = STATUSBAR_HEIGHT;
+//        viewBounds.size.height = viewBounds.size.height - STATUSBAR_HEIGHT;
+        
+        // RICHARD New stuff added
+        CGRect statusBarFrame = [UIApplication sharedApplication].statusBarFrame;
+        CGFloat statusBarHeight = statusBarFrame.size.height;
+
+        // RICHARD THIS SETS WEBVIEW FRAME (44 should be toolbar height)
+        viewBounds.origin.y = statusBarHeight + 44;
+        viewBounds.size.height = viewBounds.size.height - statusBarHeight - 44;
+        
         self.webView.frame = viewBounds;
         [[UIApplication sharedApplication] setStatusBarStyle:[self preferredStatusBarStyle]];
     }
@@ -1131,8 +1227,10 @@ BOOL isExiting = FALSE;
 
 - (void) rePositionViews {
     if ([_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop]) {
-        [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, TOOLBAR_HEIGHT, self.webView.frame.size.width, self.webView.frame.size.height)];
-        [self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, [self getStatusBarOffset], self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
+        // RICHARD this is editing the WEBVIEW FRAME
+        [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, self.webView.frame.origin.y, self.webView.frame.size.width, self.webView.frame.size.height)];
+        // RICHARD this is editing the TOOLBAR FRAME
+        [self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, self.toolbar.frame.origin.y, self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
     }
 }
 
