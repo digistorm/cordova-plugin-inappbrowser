@@ -126,6 +126,7 @@ public class InAppBrowser extends CordovaPlugin {
     private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR);
 
     private InAppBrowserDialog dialog;
+    private InAppBrowserDownloads downloads;
     private WebView inAppWebView;
     private EditText edittext;
     private CallbackContext callbackContext;
@@ -1157,10 +1158,24 @@ public class InAppBrowser extends CordovaPlugin {
                 if(openWindowHidden) {
                     dialog.hide();
                 }
+
+                if (InAppBrowser.this.downloads == null) {
+                    InAppBrowser.this.downloads = new InAppBrowserDownloads(InAppBrowser.this);
+                }
+
+                inAppWebView.setDownloadListener(
+                    InAppBrowser.this.downloads
+                );
             }
         };
         this.cordova.getActivity().runOnUiThread(runnable);
         return "";
+    }
+
+    public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) throws JSONException {
+        if (InAppBrowser.this.downloads != null) {
+            InAppBrowser.this.downloads.onRequestPermissionResult(requestCode, permissions, grantResults);
+        }
     }
 
     private void setMenuButtonImages(View view, int left, int top, int right, int bottom) {
