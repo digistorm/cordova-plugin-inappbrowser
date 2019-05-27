@@ -24,12 +24,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.InsetDrawable;
 import android.os.Parcelable;
 import android.provider.Browser;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.StateListDrawable;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -40,12 +41,12 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.View.OnApplyWindowInsetsListener;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.view.inputmethod.EditorInfo;
-import android.view.MotionEvent;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -935,27 +936,14 @@ public class InAppBrowser extends CordovaPlugin {
                 menuLayoutParams.addRule(RelativeLayout.RIGHT_OF, 3);
                 menu.setContentDescription("menu button");
                 menu.setLayoutParams(menuLayoutParams);
-                setMenuButtonImages((View) menu);
+                setMenuButtonImages((View) menu, this.dpToPixels(0), this.dpToPixels(8), this.dpToPixels(0), this.dpToPixels(8));
 
-                // We are not allowed to use onClickListener for Spinner, so we will use
-                // onTouchListener as a fallback.
-                menu.setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (event.getAction() == MotionEvent.ACTION_UP) {
-//                                emitButtonEvent(
-//                                        features.menu,
-//                                        inAppWebView.getUrl());
-                        }
-                        return false;
-                    }
-                });
+                EventLabel openExternallyItem = new EventLabel();
+                openExternallyItem.label = "Open Externally";
 
-                EventLabel newItem = new EventLabel();
-                newItem.label = "Open Externally";
-
-                EventLabel[] items = new EventLabel[1];
-                items[0] = newItem;
+                EventLabel[] items = new EventLabel[] {
+                        openExternallyItem,
+                };
 
                 if (items != null) {
                     HideSelectedAdapter<EventLabel> adapter
@@ -1175,46 +1163,22 @@ public class InAppBrowser extends CordovaPlugin {
         return "";
     }
 
-    private void setMenuButtonImages(View view) {
+    private void setMenuButtonImages(View view, int left, int top, int right, int bottom) {
         Resources activityRes = cordova.getActivity().getResources();
         int menuResId = activityRes.getIdentifier("ic_action_menu", "drawable", cordova.getActivity().getPackageName());
 
         Drawable normalDrawable = activityRes.getDrawable(menuResId);
         ViewGroup.LayoutParams params = view.getLayoutParams();
         params.width = normalDrawable.getIntrinsicWidth();
-        params.height = normalDrawable.getIntrinsicHeight();
+        params.height = WindowManager.LayoutParams.MATCH_PARENT;
 
-        StateListDrawable states = new StateListDrawable();
-        states.addState(
-                new int[] {
-                        android.R.attr.state_pressed,
-                },
-                normalDrawable
-        );
-        states.addState(
-                new int[] {
-                        android.R.attr.state_enabled,
-                },
-                normalDrawable
-        );
-        if (normalDrawable != null) {
-            states.addState(
-                    new int[] {
-                            android.R.attr.state_enabled
-                    },
-                    normalDrawable
-            );
-        }
-        states.addState(
-                new int[] {},
-                normalDrawable
-        );
-        setBackground(view, states);
+        InsetDrawable inset = new InsetDrawable(normalDrawable, left, top, right, bottom);
+        if (navigationButtonColor != "") inset.setColorFilter(android.graphics.Color.parseColor(navigationButtonColor), PorterDuff.Mode.SRC_ATOP);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
-            view.setBackgroundDrawable(normalDrawable);
+            view.setBackgroundDrawable(inset);
         } else {
-            view.setBackground(normalDrawable);
+            view.setBackground(inset);
         }
     }
 
