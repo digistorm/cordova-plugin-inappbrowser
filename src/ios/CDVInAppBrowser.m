@@ -84,6 +84,11 @@
     }
 }
 
+// RICHARD inject cookie
+- (void)injectCookie:(CDVInvokedUrlCommand*)command;
+{
+    [[CDVWKInAppBrowser getInstance] injectCookie:command];
+}
 
 - (void)injectScriptCode:(CDVInvokedUrlCommand*)command
 {

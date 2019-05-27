@@ -459,6 +459,23 @@ static CDVWKInAppBrowser* instance = nil;
     }];
 }
 
+// RICHARD inject cookie
+- (void)injectCookie:(CDVInvokedUrlCommand*)command;
+{
+    NSDictionary *properties = [NSDictionary dictionaryWithObjectsAndKeys:
+                                command.arguments[0], NSHTTPCookieDomain,
+                                command.arguments[1], NSHTTPCookiePath,
+                                command.arguments[2], NSHTTPCookieName,
+                                command.arguments[3], NSHTTPCookieValue,
+                                nil];
+    NSHTTPCookie *cookie = [NSHTTPCookie cookieWithProperties:properties];
+    if (@available(iOS 11.0, *)) {
+        [self.inAppBrowserViewController.webView.configuration.websiteDataStore.httpCookieStore setCookie:cookie completionHandler:nil];
+    } else {
+        // Fallback on earlier versions
+    }
+}
+
 - (void)injectScriptCode:(CDVInvokedUrlCommand*)command
 {
     NSString* jsWrapper = nil;
