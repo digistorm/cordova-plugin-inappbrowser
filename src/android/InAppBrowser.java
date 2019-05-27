@@ -20,7 +20,6 @@ package org.apache.cordova.inappbrowser;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -30,8 +29,7 @@ import android.provider.Browser;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.StateListDrawable;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -41,10 +39,13 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.view.inputmethod.EditorInfo;
+import android.view.MotionEvent;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -57,12 +58,15 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Spinner;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.Config;
@@ -784,13 +788,46 @@ public class InAppBrowser extends CordovaPlugin {
                 dialog = new InAppBrowserDialog(cordova.getActivity(), android.R.style.Theme_NoTitleBar);
                 dialog.getWindow().getAttributes().windowAnimations = android.R.style.Animation_Dialog;
                 dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                dialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    dialog.getWindow().setStatusBarColor(toolbarColor);
+                }
+
+                if (Build.VERSION.SDK_INT >= 21) {
+                    // Method and constants not available on all SDKs but we want to be able to compile this code with any SDK
+                    dialog.getWindow().clearFlags(0x04000000); // SDK 19: WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                    dialog.getWindow().addFlags(0x80000000); // SDK 21: WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                    try {
+                        // Using reflection makes sure any 5.0+ device will work without having to compile with SDK level 21
+                        dialog.getWindow().getClass().getMethod("setStatusBarColor", int.class).invoke(dialog.getWindow(), toolbarColor);
+                    } catch (IllegalArgumentException ignore) {
+                        LOG.e("InAppBrowser", "Invalid hexString argument, use f.i. '#999999'");
+                    } catch (Exception ignore) {
+                        // this should not happen, only in case Android removes this method in a version > 21
+                        LOG.w("InAppBrowser", "Method window.setStatusBarColor not found for SDK level " + Build.VERSION.SDK_INT);
+                    }
+                }
+
                 dialog.setCancelable(true);
                 dialog.setInAppBroswer(getInAppBrowser());
 
                 // Main container layout
                 LinearLayout main = new LinearLayout(cordova.getActivity());
                 main.setOrientation(LinearLayout.VERTICAL);
+
+                cordova.getActivity().getWindow().setStatusBarColor(toolbarColor);
+
+                // CB-14015 Fix issue with Samsung S8 status bar covering nav
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+                    dialog.getWindow().getDecorView().setBackgroundColor(toolbarColor);
+                    dialog.getWindow().getDecorView().setOnApplyWindowInsetsListener(new OnApplyWindowInsetsListener() {
+                        @Override
+                        public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
+                            v.setPadding(0, insets.getSystemWindowInsetTop(), 0, insets.getSystemWindowInsetBottom());
+                            return insets.consumeSystemWindowInsets();
+                        }
+                    });
+                }
 
                 // Toolbar layout
                 RelativeLayout toolbar = new RelativeLayout(cordova.getActivity());
@@ -891,6 +928,71 @@ public class InAppBrowser extends CordovaPlugin {
                     }
                 });
 
+                // Menu button
+                Spinner menu = new MenuSpinner(cordova.getActivity());
+
+                RelativeLayout.LayoutParams menuLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
+                menuLayoutParams.addRule(RelativeLayout.RIGHT_OF, 3);
+                menu.setContentDescription("menu button");
+                menu.setLayoutParams(menuLayoutParams);
+                setMenuButtonImages((View) menu);
+
+                // We are not allowed to use onClickListener for Spinner, so we will use
+                // onTouchListener as a fallback.
+                menu.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (event.getAction() == MotionEvent.ACTION_UP) {
+//                                emitButtonEvent(
+//                                        features.menu,
+//                                        inAppWebView.getUrl());
+                        }
+                        return false;
+                    }
+                });
+
+                EventLabel newItem = new EventLabel();
+                newItem.label = "Open Externally";
+
+                EventLabel[] items = new EventLabel[1];
+                items[0] = newItem;
+
+                if (items != null) {
+                    HideSelectedAdapter<EventLabel> adapter
+                            = new HideSelectedAdapter<EventLabel>(
+                            cordova.getActivity(),
+                            android.R.layout.simple_spinner_item,
+                            items);
+                    adapter.setDropDownViewResource(
+                            android.R.layout.simple_spinner_dropdown_item);
+                    menu.setDropDownVerticalOffset(this.dpToPixels(44));
+                    menu.setAdapter(adapter);
+                    menu.setOnItemSelectedListener(
+                            new AdapterView.OnItemSelectedListener() {
+                                @Override
+                                public void onItemSelected(
+                                        AdapterView<?> adapterView,
+                                        View view, int i, long l) {
+                                    if (inAppWebView != null
+                                            && i < items.length) {
+//                                            emitButtonEvent(
+//                                                    features.menu.items[i],
+//                                                    inAppWebView.getUrl(), i);
+
+                                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(inAppWebView.getUrl()));
+                                        cordova.getActivity().startActivity(browserIntent);
+                                    }
+                                }
+
+                                @Override
+                                public void onNothingSelected(
+                                        AdapterView<?> adapterView) {
+                                }
+                            }
+                    );
+                }
+
+                actionButtonContainer.addView(menu);
 
                 // Header Close/Done button
                 int closeButtonId = leftToRight ? 1 : 5;
@@ -1071,6 +1173,49 @@ public class InAppBrowser extends CordovaPlugin {
         };
         this.cordova.getActivity().runOnUiThread(runnable);
         return "";
+    }
+
+    private void setMenuButtonImages(View view) {
+        Resources activityRes = cordova.getActivity().getResources();
+        int menuResId = activityRes.getIdentifier("ic_action_menu", "drawable", cordova.getActivity().getPackageName());
+
+        Drawable normalDrawable = activityRes.getDrawable(menuResId);
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        params.width = normalDrawable.getIntrinsicWidth();
+        params.height = normalDrawable.getIntrinsicHeight();
+
+        StateListDrawable states = new StateListDrawable();
+        states.addState(
+                new int[] {
+                        android.R.attr.state_pressed,
+                },
+                normalDrawable
+        );
+        states.addState(
+                new int[] {
+                        android.R.attr.state_enabled,
+                },
+                normalDrawable
+        );
+        if (normalDrawable != null) {
+            states.addState(
+                    new int[] {
+                            android.R.attr.state_enabled
+                    },
+                    normalDrawable
+            );
+        }
+        states.addState(
+                new int[] {},
+                normalDrawable
+        );
+        setBackground(view, states);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            view.setBackgroundDrawable(normalDrawable);
+        } else {
+            view.setBackground(normalDrawable);
+        }
     }
 
     /**
@@ -1348,7 +1493,7 @@ public class InAppBrowser extends CordovaPlugin {
          * New (added in API 21)
          * For Android 5.0 and above.
          *
-         * @param webView
+         * @param view
          * @param request
          */
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -1482,6 +1627,64 @@ public class InAppBrowser extends CordovaPlugin {
 
             // By default handle 401 like we'd normally do!
             super.onReceivedHttpAuthRequest(view, handler, host, realm);
+        }
+
+
+    }
+
+    /**
+     * Like Spinner but will always trigger onItemSelected even if a selected
+     * item is selected, and always ignore default selection.
+     */
+    public class MenuSpinner extends Spinner {
+        private OnItemSelectedListener listener;
+
+        public MenuSpinner(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setSelection(int position) {
+            super.setSelection(position);
+
+            if (listener != null) {
+                listener.onItemSelected(null, this, position, 0);
+            }
+        }
+
+        @Override
+        public void setOnItemSelectedListener(OnItemSelectedListener listener) {
+            this.listener = listener;
+        }
+    }
+
+    /**
+     * Extension of ArrayAdapter. The only difference is that it hides the
+     * selected text that's shown inside spinner.
+     * @param <T>
+     */
+    private static class HideSelectedAdapter<T> extends ArrayAdapter {
+
+        public HideSelectedAdapter(Context context, int resource, T[] objects) {
+            super(context, resource, objects);
+        }
+
+        public View getView (int position, View convertView, ViewGroup parent) {
+            View v = super.getView(position, convertView, parent);
+            v.setVisibility(View.GONE);
+            return v;
+        }
+    }
+
+    private static class Event {
+        public String event;
+    }
+
+    private static class EventLabel extends Event {
+        public String label;
+
+        public String toString() {
+            return label;
         }
     }
 }
