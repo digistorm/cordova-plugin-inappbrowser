@@ -105,6 +105,7 @@ public class InAppBrowser extends CordovaPlugin {
     private static final String LOAD_STOP_EVENT = "loadstop";
     private static final String LOAD_ERROR_EVENT = "loaderror";
     private static final String MESSAGE_EVENT = "message";
+    private static final String CLOSE_EVENT = "close";
     private static final String CLEAR_ALL_CACHE = "clearcache";
     private static final String CLEAR_SESSION_CACHE = "clearsessioncache";
     private static final String HARDWARE_BACK_BUTTON = "hardwareback";
@@ -780,7 +781,14 @@ public class InAppBrowser extends CordovaPlugin {
                 _close.setId(Integer.valueOf(id));
                 _close.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View v) {
-                        closeDialog();
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("type", CLOSE_EVENT);
+
+                            sendUpdate(obj, true);
+                        } catch (JSONException ex) {
+                            LOG.d(LOG_TAG, "Should never happen");
+                        }
                     }
                 });
 
@@ -1182,7 +1190,7 @@ public class InAppBrowser extends CordovaPlugin {
                 }
 
                 inAppWebView.setDownloadListener(
-                    InAppBrowser.this.downloads
+                        InAppBrowser.this.downloads
                 );
             }
         };
