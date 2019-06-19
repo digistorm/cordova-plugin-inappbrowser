@@ -764,8 +764,11 @@ public class InAppBrowser extends CordovaPlugin {
                 }
 
                 RelativeLayout.LayoutParams closeLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-                if (leftToRight) closeLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                else closeLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+                if (leftToRight) {
+                    closeLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+                } else {
+                    closeLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+                }
                 _close.setLayoutParams(closeLayoutParams);
 
                 if (Build.VERSION.SDK_INT >= 16)
@@ -858,7 +861,7 @@ public class InAppBrowser extends CordovaPlugin {
                 actionButtonContainer.setLayoutParams(actionButtonLayoutParams);
                 actionButtonContainer.setHorizontalGravity(Gravity.LEFT);
                 actionButtonContainer.setVerticalGravity(Gravity.CENTER_VERTICAL);
-                actionButtonContainer.setId(leftToRight ? Integer.valueOf(5) : Integer.valueOf(1));
+                actionButtonContainer.setId(leftToRight ? Integer.valueOf(6) : Integer.valueOf(1));
 
                 // Back button
                 ImageButton back = new ImageButton(cordova.getActivity());
@@ -940,9 +943,14 @@ public class InAppBrowser extends CordovaPlugin {
                 Spinner menu = new MenuSpinner(cordova.getActivity());
 
                 RelativeLayout.LayoutParams menuLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-                menuLayoutParams.addRule(RelativeLayout.RIGHT_OF, 3);
+                if (leftToRight) {
+                    menuLayoutParams.addRule(RelativeLayout.RIGHT_OF, 3);
+                } else {
+                    menuLayoutParams.addRule(RelativeLayout.LEFT_OF, 6);
+                }
                 menu.setContentDescription("menu button");
                 menu.setLayoutParams(menuLayoutParams);
+                menu.setId(Integer.valueOf(5));
                 setMenuButtonImages((View) menu, this.dpToPixels(0), this.dpToPixels(8), this.dpToPixels(0), this.dpToPixels(8));
 
                 EventLabel openExternallyItem = new EventLabel();
@@ -987,12 +995,16 @@ public class InAppBrowser extends CordovaPlugin {
                     );
                 }
 
-                actionButtonContainer.addView(menu);
-
                 // Header Close/Done button
-                int closeButtonId = leftToRight ? 1 : 5;
+                int closeButtonId = leftToRight ? 1 : 6;
                 View close = createCloseButton(closeButtonId);
                 toolbar.addView(close);
+
+                if (leftToRight) {
+                    actionButtonContainer.addView(menu);
+                } else {
+                    toolbar.addView(menu);
+                }
 
                 // Footer
                 RelativeLayout footer = new RelativeLayout(cordova.getActivity());
@@ -1017,7 +1029,7 @@ public class InAppBrowser extends CordovaPlugin {
                 // WebView
                 inAppWebView = new WebView(cordova.getActivity());
                 inAppWebView.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-                inAppWebView.setId(Integer.valueOf(6));
+                inAppWebView.setId(Integer.valueOf(7));
                 // File Chooser Implemented ChromeClient
                 inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
                     // For Android 5.0+
@@ -1121,7 +1133,7 @@ public class InAppBrowser extends CordovaPlugin {
                 }
 
                 inAppWebView.loadUrl(url);
-                inAppWebView.setId(Integer.valueOf(6));
+                inAppWebView.setId(Integer.valueOf(7));
                 inAppWebView.getSettings().setLoadWithOverviewMode(true);
                 inAppWebView.getSettings().setUseWideViewPort(useWideViewPort);
                 inAppWebView.requestFocus();
