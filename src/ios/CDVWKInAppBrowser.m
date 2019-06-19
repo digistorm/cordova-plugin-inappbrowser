@@ -236,11 +236,9 @@ static CDVWKInAppBrowser* instance = nil;
     [self.inAppBrowserViewController showLocationBar:browserOptions.location];
     [self.inAppBrowserViewController showToolBar:browserOptions.toolbar :browserOptions.toolbarposition];
     if (browserOptions.closebuttoncaption != nil || browserOptions.closebuttoncolor != nil) {
-        int closeButtonIndex = (!browserOptions.lefttoright) ? (browserOptions.hidenavigationbuttons ? 1 : 4) : 0;
-//        [self.inAppBrowserViewController setCloseButtonTitle:browserOptions.closebuttoncaption :browserOptions.closebuttoncolor :closeButtonIndex];
+        int closeButtonIndex = (!browserOptions.lefttoright) ? (browserOptions.hidenavigationbuttons ? 1 : 6) : 0;
+        [self.inAppBrowserViewController setCloseButtonTitle:@"╳" :browserOptions.closebuttoncolor :closeButtonIndex];
     }
-    // RICHARD hack
-    [self.inAppBrowserViewController setCloseButtonTitle:@"╳" :browserOptions.closebuttoncolor :0];
     
     // Set Presentation Style
     UIModalPresentationStyle presentationStyle = UIModalPresentationFullScreen; // default
@@ -938,7 +936,7 @@ BOOL isExiting = FALSE;
             [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton]];
         }
     } else if (!_browserOptions.lefttoright) {
-        [self.toolbar setItems:@[self.backButton, fixedSpaceButton, self.forwardButton, flexibleSpaceButton, self.closeButton]];
+        [self.toolbar setItems:@[self.backButton, fixedSpaceButton, self.forwardButton, flexibleSpaceButton, self.menuButton, fixedSpaceButton, self.closeButton]];
     } else {
         [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton, fixedSpaceButton, self.menuButton]];
     }
