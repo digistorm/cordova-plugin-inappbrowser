@@ -1168,13 +1168,19 @@ BOOL isExiting = FALSE;
                                          }];
         [alertController addAction:externalAction];
         
-             NSString* cancelTitle = NSLocalizedString(@"Cancel", nil);
-        
-            UIAlertAction *cancelAction = [UIAlertAction
-                                           actionWithTitle:cancelTitle
-                                           style:UIAlertActionStyleCancel
-                                           handler:nil];
-            [alertController addAction:cancelAction];
+        NSString* cancelTitle = NSLocalizedString(@"Cancel", nil);
+    
+        UIAlertAction *cancelAction = [UIAlertAction
+                                       actionWithTitle:cancelTitle
+                                       style:UIAlertActionStyleCancel
+                                       handler:nil];
+        [alertController addAction:cancelAction];
+    
+        UIView *view = [self.menuButton valueForKey:@"view"];
+        alertController.popoverPresentationController.sourceView = self.view;
+        alertController.popoverPresentationController.sourceRect = view.frame;
+        // Remove arrow from action sheet.
+        [alertController.popoverPresentationController setPermittedArrowDirections:0];
         
         [self presentViewController:alertController animated:YES completion:nil];
     }
