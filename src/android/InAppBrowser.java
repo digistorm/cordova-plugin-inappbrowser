@@ -20,12 +20,15 @@ package org.apache.cordova.inappbrowser;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.InsetDrawable;
+import android.net.http.SslError;
 import android.os.Parcelable;
 import android.provider.Browser;
 import android.content.res.Resources;
@@ -37,6 +40,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.TypedValue;
+import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -52,6 +56,7 @@ import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
+import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -1299,7 +1304,7 @@ public class InAppBrowser extends CordovaPlugin {
             this.waitForBeforeload = beforeload != null;
         }
 
-        // Rejected by Google Play - Failed to validate the certificate chain
+        // Prompt user to allow failed SSL
         @Override
         public void onReceivedSslError(WebView view, final SslErrorHandler handler, SslError error) {
             final AlertDialog.Builder builder = new AlertDialog.Builder(cordova.getActivity());
