@@ -31,6 +31,16 @@
     return self;
 }
 
+// Open _blank links in the same webview
+// https://stackoverflow.com/questions/25713069/why-is-wkwebview-not-opening-links-with-target-blank
+- (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
+{
+    if (!navigationAction.targetFrame.isMainFrame) {   
+        [webView loadRequest:navigationAction.request];
+    }
+    return nil;
+}
+
 - (void)     webView:(WKWebView*)webView runJavaScriptAlertPanelWithMessage:(NSString*)message
     initiatedByFrame:(WKFrameInfo*)frame completionHandler:(void (^)(void))completionHandler
 {
