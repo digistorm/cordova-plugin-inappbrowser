@@ -1167,6 +1167,16 @@ BOOL isExiting = FALSE;
                                              [self goExternal];
                                          }];
         [alertController addAction:externalAction];
+
+        // Add link to CIS Homepage
+        NSString* homeTitle = NSLocalizedString(@"Return to Homepage", nil);
+        UIAlertAction *homeAction = [UIAlertAction
+                                         actionWithTitle:homeTitle
+                                         style:UIAlertActionStyleDefault
+                                         handler:^(UIAlertAction *action) {
+                                             [self goHome];
+                                         }];
+        [alertController addAction:homeAction];
         
         NSString* cancelTitle = NSLocalizedString(@"Cancel", nil);
     
@@ -1196,6 +1206,14 @@ BOOL isExiting = FALSE;
 - (void)goExternal
 {
     [self openInSystem:self.currentURL];
+}
+
+- (void)goHome
+{
+    // Go to CIS Homepage
+    NSString* homeUrl = @"https://my.cis.edu.sg";
+    NSURL* url = [NSURL URLWithString:homeUrl];
+    [self navigateTo:url];
 }
 
 

@@ -969,8 +969,12 @@ public class InAppBrowser extends CordovaPlugin {
                 EventLabel openExternallyItem = new EventLabel();
                 openExternallyItem.label = "Open Externally";
 
+                EventLabel openHomeItem = new EventLabel();
+                openHomeItem.label = "Open Homepage";
+
                 EventLabel[] items = new EventLabel[] {
                         openExternallyItem,
+                        openHomeItem
                 };
 
                 if (items != null) {
@@ -995,8 +999,14 @@ public class InAppBrowser extends CordovaPlugin {
 //                                                    features.menu.items[i],
 //                                                    inAppWebView.getUrl(), i);
 
-                                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(inAppWebView.getUrl()));
-                                        cordova.getActivity().startActivity(browserIntent);
+                                        if (i == 0) {
+                                            // First item, Open Externally
+                                            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(inAppWebView.getUrl()));
+                                            cordova.getActivity().startActivity(browserIntent);
+                                        } else {
+                                            // Second item, Open Homepage
+                                            showWebPage("https://my.cis.edu.sg", null);
+                                        }
                                     }
                                 }
 
