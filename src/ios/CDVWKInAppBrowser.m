@@ -1214,8 +1214,13 @@ BOOL isExiting = FALSE;
         CGFloat statusBarHeight = statusBarFrame.size.height;
 
         // RICHARD THIS SETS WEBVIEW FRAME (44 should be toolbar height)
-        viewBounds.origin.y = statusBarHeight + 44;
-        viewBounds.size.height = viewBounds.size.height - statusBarHeight - 44;
+        if (self.toolbar.hidden) {
+            viewBounds.origin.y = statusBarHeight;
+            viewBounds.size.height = viewBounds.size.height - statusBarHeight;
+        } else {
+            viewBounds.origin.y = statusBarHeight + TOOLBAR_HEIGHT;
+            viewBounds.size.height = viewBounds.size.height - statusBarHeight - TOOLBAR_HEIGHT;
+        }
         
         self.webView.frame = viewBounds;
         [[UIApplication sharedApplication] setStatusBarStyle:[self preferredStatusBarStyle]];
