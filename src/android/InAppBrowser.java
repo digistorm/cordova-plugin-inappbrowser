@@ -106,6 +106,7 @@ public class InAppBrowser extends CordovaPlugin {
     private static final String LOCATION = "location";
     private static final String ZOOM = "zoom";
     private static final String HIDDEN = "hidden";
+    private static final String OPEN_EXTERNAL_EVENT = "openexternal";
     private static final String LOAD_START_EVENT = "loadstart";
     private static final String LOAD_STOP_EVENT = "loadstop";
     private static final String LOAD_ERROR_EVENT = "loaderror";
@@ -987,12 +988,15 @@ public class InAppBrowser extends CordovaPlugin {
                                         View view, int i, long l) {
                                     if (inAppWebView != null
                                             && i < items.length) {
-//                                            emitButtonEvent(
-//                                                    features.menu.items[i],
-//                                                    inAppWebView.getUrl(), i);
-
-                                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(inAppWebView.getUrl()));
-                                        cordova.getActivity().startActivity(browserIntent);
+                                        // Emit JS event
+                                        try {
+                                            JSONObject obj = new JSONObject();
+                                            obj.put("type", OPEN_EXTERNAL_EVENT);
+                                            obj.put("url", inAppWebView.getUrl());
+                                            sendUpdate(obj, true);
+                                        } catch (JSONException ex) {
+                                            LOG.e(LOG_TAG, "URI passed in has caused a JSON error.");
+                                        }
                                     }
                                 }
 

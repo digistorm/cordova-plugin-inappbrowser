@@ -716,6 +716,15 @@ static CDVWKInAppBrowser* instance = nil;
     _previousStatusBarStyle = -1; // this value was reset before reapplying it. caused statusbar to stay black on ios7
 }
 
+- (void)openExternal:(NSURL*)url
+{
+    // Emit JS event
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                messageAsDictionary:@{@"type":@"openexternal", @"url":url.absoluteString}];
+    [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:self.callbackId];
+}
+
 @end //CDVWKInAppBrowser
 
 #pragma mark CDVWKInAppBrowserViewController
@@ -1185,7 +1194,9 @@ BOOL isExiting = FALSE;
 
 - (void)goExternal
 {
-    [self openInSystem:self.currentURL];
+    if (self.navigationDelegate != nil) {
+        [self.navigationDelegate openExternal:self.currentURL];
+    }
 }
 
 
