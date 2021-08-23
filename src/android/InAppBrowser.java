@@ -1722,14 +1722,27 @@ public class InAppBrowser extends CordovaPlugin {
      */
     private static class HideSelectedAdapter<T> extends ArrayAdapter {
 
+        private T[] objects;
+
         public HideSelectedAdapter(Context context, int resource, T[] objects) {
             super(context, resource, objects);
+            this.objects = objects;
         }
 
         public View getView (int position, View convertView, ViewGroup parent) {
             View v = super.getView(position, convertView, parent);
             v.setVisibility(View.GONE);
             return v;
+        }
+
+        @Override
+        public View getDropDownView(int position, View convertView, ViewGroup parent) {
+            TextView label = (TextView) super.getDropDownView(position, convertView, parent);
+            label.setTextColor(Color.BLACK);
+            label.setBackgroundColor(Color.WHITE);
+            label.setText(objects[position].toString());
+
+            return label;
         }
     }
 
