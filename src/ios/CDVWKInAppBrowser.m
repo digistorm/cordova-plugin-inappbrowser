@@ -1232,28 +1232,28 @@ BOOL isExiting = FALSE;
 
 - (void)viewWillAppear:(BOOL)animated
 {
-    if (IsAtLeastiOSVersion(@"7.0") && !viewRenderedAtLeastOnce) {
-        viewRenderedAtLeastOnce = TRUE;
-        CGRect viewBounds = [self.webView bounds];
-//        viewBounds.origin.y = STATUSBAR_HEIGHT;
-//        viewBounds.size.height = viewBounds.size.height - STATUSBAR_HEIGHT;
+//     if (IsAtLeastiOSVersion(@"7.0") && !viewRenderedAtLeastOnce) {
+//         viewRenderedAtLeastOnce = TRUE;
+//         CGRect viewBounds = [self.webView bounds];
+// //        viewBounds.origin.y = STATUSBAR_HEIGHT;
+// //        viewBounds.size.height = viewBounds.size.height - STATUSBAR_HEIGHT;
 
-        // RICHARD New stuff added
-        CGRect statusBarFrame = [UIApplication sharedApplication].statusBarFrame;
-        CGFloat statusBarHeight = statusBarFrame.size.height;
+//         // RICHARD New stuff added
+//         CGRect statusBarFrame = [UIApplication sharedApplication].statusBarFrame;
+//         CGFloat statusBarHeight = statusBarFrame.size.height;
 
-        // RICHARD THIS SETS WEBVIEW FRAME (44 should be toolbar height)
-        if (self.toolbar.hidden) {
-            viewBounds.origin.y = statusBarHeight;
-            viewBounds.size.height = viewBounds.size.height - statusBarHeight;
-        } else {
-            viewBounds.origin.y = statusBarHeight + TOOLBAR_HEIGHT;
-            viewBounds.size.height = viewBounds.size.height - statusBarHeight - TOOLBAR_HEIGHT;
-        }
+//         // RICHARD THIS SETS WEBVIEW FRAME (44 should be toolbar height)
+//         if (self.toolbar.hidden) {
+//             viewBounds.origin.y = statusBarHeight;
+//             viewBounds.size.height = viewBounds.size.height - statusBarHeight;
+//         } else {
+//             viewBounds.origin.y = statusBarHeight + TOOLBAR_HEIGHT;
+//             viewBounds.size.height = viewBounds.size.height - statusBarHeight - TOOLBAR_HEIGHT;
+//         }
 
-        self.webView.frame = viewBounds;
-        [[UIApplication sharedApplication] setStatusBarStyle:[self preferredStatusBarStyle]];
-    }
+//         self.webView.frame = viewBounds;
+//         [[UIApplication sharedApplication] setStatusBarStyle:[self preferredStatusBarStyle]];
+//     }
     [self rePositionViews];
 
     [super viewWillAppear:animated];
@@ -1269,11 +1269,21 @@ BOOL isExiting = FALSE;
 }
 
 - (void) rePositionViews {
-    if ([_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop]) {
-        // RICHARD this is editing the WEBVIEW FRAME
-        [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, self.webView.frame.origin.y, self.webView.frame.size.width, self.webView.frame.size.height)];
-        // RICHARD this is editing the TOOLBAR FRAME
-        [self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, self.toolbar.frame.origin.y, self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
+    CGRect viewBounds = [self.webView bounds];
+    CGFloat statusBarHeight = [self getStatusBarOffset];
+
+    // orientation portrait or portraitUpsideDown: status bar is on the top and web view is to be aligned to the bottom of the status bar
+    // orientation landscapeLeft or landscapeRight: status bar height is 0 in but lets account for it in case things ever change in the future
+    viewBounds.origin.y = statusBarHeight;
+
+    // account for web view height portion that may have been reduced by a previous call to this method
+    viewBounds.size.height = viewBounds.size.height - statusBarHeight + lastReducedStatusBarHeight;
+    lastReducedStatusBarHeight = statusBarHeight;
+
+    if ((_browserOptions.toolbar) && ([_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop])) {
+        // if we have to display the toolbar on top of the web view, we need to account for its height
+        viewBounds.origin.y += TOOLBAR_HEIGHT;
+        self.toolbar.frame = CGRectMake(self.toolbar.frame.origin.x, statusBarHeight, self.toolbar.frame.size.width, self.toolbar.frame.size.height);
     }
 
     self.webView.frame = viewBounds;
